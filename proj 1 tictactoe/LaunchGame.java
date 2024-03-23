@@ -1,5 +1,7 @@
+import java.util.Scanner;
+
 class TicTacToe {
-    char[][] board;
+    static char[][] board;
 
     /**
      * Constructs a TicTacToe object and initializes the game board.
@@ -26,7 +28,7 @@ class TicTacToe {
     /**
      * Displays the current state of the game board.
      */
-    void displayBoard() {
+    static void displayBoard() {
         System.out.println("-------------");
         for (int i = 0; i < board.length; i++) {
             System.out.print("| ");
@@ -45,7 +47,7 @@ class TicTacToe {
      * @param column Column index of the position.
      * @param mark   Mark to be placed ('X' or 'O').
      */
-    void placeMark(int row, int column, char mark) {
+    static void placeMark(int row, int column, char mark) {
         if (row >= 0 && row <= 2 && column >= 0 && column <= 2) {
             board[row][column] = mark;
         } else {
@@ -59,7 +61,7 @@ class TicTacToe {
      *
      * @return true if any player has won in any column, otherwise false.
      */
-    boolean checkColumnWin() {
+    static boolean checkColumnWin() {
         for (int j = 0; j <= 2; j++) {
             if (board[0][j] != ' ' && board[0][j] == board[1][j] && board[1][j] == board[2][j]) {
                 return true;
@@ -73,7 +75,7 @@ class TicTacToe {
      *
      * @return true if any player has won in any row, otherwise false.
      */
-    boolean checkRowWin() {
+    static boolean checkRowWin() {
         for (int i = 0; i <= 2; i++) {
             if (board[i][0] != ' ' && board[i][0] == board[i][1] && board[i][1] == board[i][2]) {
                 return true;
@@ -89,7 +91,7 @@ class TicTacToe {
      *
      * @return true if there is a winning diagonal pattern, false otherwise.
      */
-    boolean checkDiagonalWin() {
+    static boolean checkDiagonalWin() {
         return (board[0][0] != ' ' && board[0][0] == board[1][1] && board[1][1] == board[2][2]) || // Top-left to bottom-right diagonal
                 (board[0][2] != ' ' && board[0][2] == board[1][1] && board[1][1] == board[2][0])
                 ;   // Top-right to bottom-left diagonal
@@ -99,16 +101,94 @@ class TicTacToe {
 }
 
 
+class HumanPlayer {
+    String name; // Name of the player
+    char mark;   // Mark ('X' or 'O') used by the player
+
+
+    /**
+     * Constructs a HumanPlayer object with the specified name and mark.
+     * Constructor is also a setter.
+     *
+     * @param name Name of the player.
+     * @param mark Mark ('X' or 'O') used by the player.
+     */
+    HumanPlayer(String name, char mark) {
+        this.name = name;
+        this.mark = mark;
+    }
+
+    /**
+     * Allows the player to make a move by entering row and column indices.
+     * Keeps prompting the player until a valid move is entered.
+     */
+    void makeMove() {
+        Scanner sc = new Scanner(System.in);
+        int row;
+        int column;
+        do {
+            System.out.println("Enter the row and column");
+            row = sc.nextInt();
+            column = sc.nextInt();
+        } while (!isMoveValid(row, column));
+
+        TicTacToe.placeMark(row, column, mark);
+
+    }
+
+    /**
+     * Checks if a move at the specified row and column is valid.
+     * A move is considered valid if the specified position is within the board boundaries
+     * and the position is currently empty (marked with ' ').
+     *
+     * @param row    The row index of the move.
+     * @param column The column index of the move.
+     * @return true if the move is valid, false otherwise.
+     */
+    boolean isMoveValid(int row, int column) {
+        if (row >= 0 && row <= 2 && column >= 0 && column <= 2) {
+            if (TicTacToe.board[row][column] == ' ') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+}
+
 public class LaunchGame {
+
+    /**
+     * The main method to start the Tic-Tac-Toe game.
+     * It initializes the game with a new TicTacToe object and two HumanPlayer objects.
+     * Then, it enters a loop where each player takes turns to make a move until one of them wins or the game ends in a draw.
+     * After each move, it displays the current state of the game board.
+     * If a player wins, it displays the winner and exits the loop.
+     */
     public static void main(String[] args) {
         TicTacToe t = new TicTacToe();
-//        t.displayBoard();
-//        t.placeMark(0, 2, 'X');
-//        t.placeMark(1, 1, 'X');
-//        t.placeMark(2, 0 , 'X');
-        t.displayBoard();
-        System.out.println(t.checkDiagonalWin());
-        System.out.println(t.checkColumnWin());
-        System.out.println(t.checkRowWin());
+        HumanPlayer p1 = new HumanPlayer("Bruce", 'X');
+        HumanPlayer p2 = new HumanPlayer("Clarke", 'O');
+        HumanPlayer currPlayer;
+
+        currPlayer = p1;
+
+        while (true) {
+            System.out.println(currPlayer.name + " turn");
+            currPlayer.makeMove();
+            TicTacToe.displayBoard();
+
+            if (TicTacToe.checkColumnWin() || TicTacToe.checkDiagonalWin() || TicTacToe.checkDiagonalWin()) {
+                System.out.println(currPlayer.name + " is the winner");
+                break;
+            } else {
+                if (currPlayer == p1) {
+                    currPlayer = p2;
+                } else {
+                    currPlayer = p1;
+                }
+            }
+        }
+
     }
 }
