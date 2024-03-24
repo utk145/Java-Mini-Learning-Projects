@@ -1,3 +1,4 @@
+import java.util.Random;
 import java.util.Scanner;
 
 class TicTacToe {
@@ -97,13 +98,61 @@ class TicTacToe {
                 ;   // Top-right to bottom-left diagonal
     }
 
+    /**
+     * Checks if the game is over, either due to a win or a draw.
+     *
+     * @return true if the game is over, false otherwise.
+     */
+    static boolean isGameOver() {
+        return checkColumnWin() || checkRowWin() || checkDiagonalWin() || isBoardFull();
+    }
+
+
+    /**
+     * Checks if the game board is full, indicating a draw.
+     *
+     * @return true if the board is full, false otherwise.
+     */
+    static boolean isBoardFull() {
+        for (int i = 0; i < board.length; i++) {
+            for (int j = 0; j < board[i].length; j++) {
+                if (board[i][j] == ' ') {
+                    return false; // If any cell is empty, the board is not full
+                }
+            }
+        }
+        return true; // If no empty cell is found, the board is full
+    }
 
 }
 
-
-class HumanPlayer {
+abstract class Player {
     String name; // Name of the player
     char mark;   // Mark ('X' or 'O') used by the player
+
+    abstract void makeMove();
+
+    /**
+     * Checks if a move at the specified row and column is valid.
+     * A move is considered valid if the specified position is within the board boundaries
+     * and the position is currently empty (marked with ' ').
+     *
+     * @param row    The row index of the move.
+     * @param column The column index of the move.
+     * @return true if the move is valid, false otherwise.
+     */
+    boolean isMoveValid(int row, int column) {
+        if (row >= 0 && row <= 2 && column >= 0 && column <= 2) {
+            if (TicTacToe.board[row][column] == ' ') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+}
+
+class HumanPlayer extends Player {
 
 
     /**
@@ -136,25 +185,119 @@ class HumanPlayer {
 
     }
 
-    /**
-     * Checks if a move at the specified row and column is valid.
-     * A move is considered valid if the specified position is within the board boundaries
-     * and the position is currently empty (marked with ' ').
-     *
-     * @param row    The row index of the move.
-     * @param column The column index of the move.
-     * @return true if the move is valid, false otherwise.
-     */
-    boolean isMoveValid(int row, int column) {
-        if (row >= 0 && row <= 2 && column >= 0 && column <= 2) {
-            if (TicTacToe.board[row][column] == ' ') {
-                return true;
-            }
-        }
-        return false;
+
+}
+
+class AIPlayerSimple extends Player {
+
+    AIPlayerSimple(String name, char mark) {
+        this.name = name;
+        this.mark = mark;
+    }
+
+
+    void makeMove() {
+        int row;
+        int column;
+        do {
+            Random rand = new Random();
+            row = rand.nextInt(3);
+            column = rand.nextInt(3);
+        } while (!isMoveValid(row, column));
+
+        TicTacToe.placeMark(row, column, mark);
+
     }
 
 }
+
+class AIPlayer extends Player {
+
+    /**
+     * Constructs an AIPlayer object with the specified name and mark.
+     *
+     * @param name Name of the player.
+     * @param mark Mark ('X' or 'O') used by the player.
+     */
+    AIPlayer(String name, char mark) {
+        this.name = name;
+        this.mark = mark;
+    }
+
+    /**
+     * Allows the AI player to make a move using the Minimax algorithm.
+     */
+    void makeMove() {
+        int[] bestMove = minimax(2, mark); // Adjust the depth for more or less lookahead
+
+        if (TicTacToe.board[bestMove[0]][bestMove[1]] == ' ') {
+            TicTacToe.placeMark(bestMove[0], bestMove[1], mark);
+        } else {
+            System.out.println("Error: AI tried to overwrite a non-empty space! You get a turn as penalty to AI");
+        }
+    }
+
+    /**
+     * Minimax algorithm with alpha-beta pruning for optimal move selection.
+     *
+     * @param depth  The depth of the search tree.
+     * @param player The current player ('X' or 'O').
+     * @return The best move represented by an array [row, column].
+     */
+    private int[] minimax(int depth, char player) {
+        int bestScore;
+        if (player == mark) {
+            bestScore = Integer.MIN_VALUE;
+        } else {
+            bestScore = Integer.MAX_VALUE;
+        }
+
+        int[] bestMove = new int[]{-1, -1};
+
+        // Base case: If the game is over or depth is reached, evaluate the board.
+        if (depth == 0 || TicTacToe.isGameOver()) {
+            bestScore = evaluate();
+        } else {
+            for (int i = 0; i < TicTacToe.board.length; i++) {
+                for (int j = 0; j < TicTacToe.board[i].length; j++) {
+                    if (TicTacToe.board[i][j] == ' ') {
+                        TicTacToe.placeMark(i, j, player); // Make the move directly
+                        int score = minimax(depth - 1, player == 'X' ? 'O' : 'X')[0];
+
+                        if ((player == mark && score > bestScore) || (player != mark && score < bestScore)) {
+                            bestScore = score;
+                            bestMove[0] = i;
+                            bestMove[1] = j;
+                        }
+
+                        TicTacToe.placeMark(i, j, ' '); // Reset the board after evaluating the move
+                    }
+                }
+            }
+        }
+        return new int[]{bestScore, bestMove[0], bestMove[1]};
+    }
+
+
+    /**
+     * Evaluates the current state of the board.
+     * Positive value indicates advantage for AI, negative for Human, 0 for tie.
+     *
+     * @return The evaluation score.
+     */
+    private int evaluate() {
+        if (TicTacToe.checkColumnWin() || TicTacToe.checkRowWin() || TicTacToe.checkDiagonalWin()) {
+            if (mark == 'X') {
+                return 1;
+            } else {
+                return -1;
+            }
+        } else {
+            return 0;
+        }
+    }
+}
+
 
 public class LaunchGame {
 
@@ -167,6 +310,8 @@ public class LaunchGame {
      */
     public static void main(String[] args) {
         TicTacToe t = new TicTacToe();
+
+        /*
         HumanPlayer p1 = new HumanPlayer("Bruce", 'X');
         HumanPlayer p2 = new HumanPlayer("Clarke", 'O');
         HumanPlayer currPlayer;
@@ -180,6 +325,33 @@ public class LaunchGame {
 
             if (TicTacToe.checkColumnWin() || TicTacToe.checkDiagonalWin() || TicTacToe.checkDiagonalWin()) {
                 System.out.println(currPlayer.name + " is the winner");
+                break;
+            } else {
+                if (currPlayer == p1) {
+                    currPlayer = p2;
+                } else {
+                    currPlayer = p1;
+                }
+            }
+        }
+        */
+
+        HumanPlayer p1 = new HumanPlayer("Bruce", 'X');
+//        AIPlayerSimple p2 = new AIPlayerSimple("POAI", 'O');
+        AIPlayer p2 = new AIPlayer("BOAI", 'O');
+        Player currPlayer;
+        currPlayer = p1;
+
+        while (true) {
+            System.out.println(currPlayer.name + " turn");
+            currPlayer.makeMove();
+            TicTacToe.displayBoard();
+
+            if (TicTacToe.checkColumnWin() || TicTacToe.checkDiagonalWin() || TicTacToe.checkDiagonalWin()) {
+                System.out.println(currPlayer.name + " is the winner");
+                break;
+            } else if (TicTacToe.isBoardFull()) {
+                System.out.println("The game ends in a draw!");
                 break;
             } else {
                 if (currPlayer == p1) {
